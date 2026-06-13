@@ -42,6 +42,11 @@ function notifyListeners(user) {
 export const AuthService = {
   // Sign up
   async signUp(email, password, displayName = "") {
+    // teacher 아이디 자동 변환
+    if (email === 'teacher') {
+      email = 'teacher@admin.com';
+    }
+
     if (isFirebaseEnabled && auth) {
       try {
         const userCredential = await createUserWithEmailAndPassword(auth, email, password);
@@ -76,20 +81,26 @@ export const AuthService = {
 
   // Log in with Email and Password
   async login(email, password) {
+    // teacher 아이디 자동 변환
+    if (email === 'teacher') {
+      email = 'teacher@admin.com';
+    }
+
     if (isFirebaseEnabled && auth) {
       try {
         const userCredential = await signInWithEmailAndPassword(auth, email, password);
         return userCredential.user;
       } catch (error) {
         console.error("Firebase Login error:", error);
-        // Self-healing for guest account: if it doesn't exist, create it automatically
-        if (email === DEMO_USER.email && (error.code === "auth/user-not-found" || error.code === "auth/invalid-credential" || error.code === "auth/invalid-login-credentials")) {
+        // Self-healing for guest or admin account: if it doesn't exist, create it automatically
+        const isSpecialAccount = email === DEMO_USER.email || email === 'teacher@admin.com';
+        if (isSpecialAccount && (error.code === "auth/user-not-found" || error.code === "auth/invalid-credential" || error.code === "auth/invalid-login-credentials")) {
           try {
-            console.log("Demo user not found on Firebase. Creating demo account...");
+            console.log("Special user not found on Firebase. Creating account...");
             const userCredential = await createUserWithEmailAndPassword(auth, email, password);
             return userCredential.user;
           } catch (createError) {
-            console.error("Failed to automatically create demo user:", createError);
+            console.error("Failed to automatically create special user:", createError);
           }
         }
         throw error;
